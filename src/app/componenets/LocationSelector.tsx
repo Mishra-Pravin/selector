@@ -1,5 +1,6 @@
-'use client'
-import React, { useEffect, useState } from "react";
+"use client";
+import { CheckCircle } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import data from "../../../country-state-city.json";
 import {
   Select,
@@ -17,6 +18,17 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
+import { ChevronsUpDown } from "lucide-react";
 
 interface City {
   id: number;
@@ -57,6 +69,9 @@ export default function LocationSelector() {
   const [selectedState, setSelectedState] = useState<number | null>(null);
   const [selectedCity, setSelectedCity] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<string>("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setCountries(countryData);
@@ -70,7 +85,8 @@ export default function LocationSelector() {
     if (country) {
       setStates(country.states);
       setSelectedCountry(country.id);
-      setFilteredCountries([country]);
+      setValue(country.name);
+      setOpen(false);
     } else {
       setStates([]);
       setSelectedCountry(null);
@@ -109,6 +125,13 @@ export default function LocationSelector() {
     }
   };
 
+  const handleSelectCountry = () => {
+    setOpen(!open);
+    if (!open && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <Card className="w-[350px] p-8 mb-8">
@@ -117,34 +140,44 @@ export default function LocationSelector() {
         </CardTitle>
         <div className="flex flex-col space-y-4">
           {/* Searchable Country Select */}
-          <div className="relative ">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="block w-full text-sm border-gray-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 before:absolute before:inset-0 before:z-[1] dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 py-2 px-3"
-            />
-            {searchTerm && (
-              <ul className="mt-2 max-h-72 pb-1 px-1 space-y-0.5 z-20 w-full bg-white border border-gray-200 rounded-lg overflow-hidden overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-track]:bg-neutral-700 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500 dark:bg-neutral-900 dark:border-neutral-700">
-                {filteredCountries.length > 0 ? (
-                  filteredCountries.map((country) => (
-                    <li
-                      key={country.id}
-                      className="py-2 px-4 w-full text-sm text-gray-800 cursor-pointer hover:bg-gray-100 rounded-lg focus:outline-none focus:bg-gray-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:text-neutral-200 dark:focus:bg-neutral-800"
-                      onClick={() => handleCountryChange(country.id)}
-                    >
-                      {country.name}
-                    </li>
-                  ))
-                ) : (
-                  <li className="px-4 py-2 text-gray-500">
-                    No countries found.
-                  </li>
-                )}
-              </ul>
-            )}
-          </div>
+          <CommandDialog open={open} onOpenChange={setOpen}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search country..."
+                value={searchTerm}
+                onChange={(event) => handleSearchChange(event)}
+                className="block w-full border border-gray-300 rounded-md py-2 pl-3 pr-10 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-inherit"
+                ref={searchInputRef}
+              />
+            
+            </div>
+            <CommandList>
+              {filteredCountries.map((country) => (
+                <CommandItem
+                  key={country.id}
+                  value={String(country.id)}
+                  onSelect={() => handleCountryChange(country.id)}
+                >
+                  {country.name}
+                  {selectedCountry === country.id && (
+                    <CheckCircle className="ml-2 h-4 w-4 text-green-500" />
+                  )}
+                </CommandItem>
+              ))}
+            </CommandList>
+          </CommandDialog>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+            onClick={handleSelectCountry}
+          >
+            {value || "Select country..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+
           {/* State Select */}
           <Select
             onValueChange={(value) => handleStateChange(Number(value))}
@@ -226,3 +259,4 @@ export default function LocationSelector() {
     </div>
   );
 }
+
